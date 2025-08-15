@@ -6,12 +6,12 @@
 #define K(opcode) (((opcode) & 0xF000) >> 12)
 
 extern short    stack[512];
-extern char     memory[4096];
+extern unsigned char     memory[4096];
 extern char     registers[16];
 
 
-short   *fetch_next_opcode(int *pc);
+unsigned short  fetch_next_opcode(int *pc);
 
-void    decode_and_execute_opcode(short *opcode, int *pc, int *sp, int *ic);
+void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *ic);
 
 

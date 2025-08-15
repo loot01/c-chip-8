@@ -6,7 +6,7 @@
 extern char     display[HEIGHT][WIDTH];
 extern short    stack[512];
 extern char     registers[16];
-extern char     memory[4096];
+extern unsigned char     memory[4096];
 
 void    setup_screen();
 

@@ -13,7 +13,7 @@ int     open_rom(char *rom_path)
     return (fd);
 }
 
-void    write_to_memory(char *rom_path, char *memory)
+void    write_to_memory(char *rom_path, unsigned char *memory)
 {
     int     rom_fd;
     char    c;

@@ -5,7 +5,7 @@
 #include "../includes/cpu.h"
 #define FPS 60
 
-char    memory[4096] = {0};
+unsigned char    memory[4096] = {0};
 short   stack[512] = {0};
 char    display[HEIGHT][WIDTH];
 char    registers[16];
@@ -41,7 +41,7 @@ int main (int argc, char **argv)
     {
         for (int i = 0; i < (int) instructions_per_frame; i++)
         {
-            short *opcode = fetch_next_opcode(&pc);
+            unsigned short opcode = fetch_next_opcode(&pc);
             decode_and_execute_opcode(opcode, &pc, &sp, &ic);
         }
         BeginDrawing();
