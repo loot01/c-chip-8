@@ -1,6 +1,5 @@
 #include <raylib.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include "../includes/render.h"
 
 void    clear_screen()
@@ -20,7 +19,7 @@ void    setup_screen()
     clear_screen();
 }
 
-void printBits(size_t const size, void const * const ptr)
+void printBits(int size, void const * const ptr)
 {
     unsigned char *b = (unsigned char*) ptr;
     unsigned char byte;
@@ -39,29 +38,22 @@ void    update_n_bytes(int ic, char starting_x, char starting_y, char n)
 {
     char    pixels;
     char    pixel;
-    char    display_pixel;
-
     for (int byte = 0; byte < n; byte++)
     {
-        if (starting_x > WIDTH)
-        {
-            starting_x = 0;
-            starting_y++;
-        }
         pixels = memory[ic + byte];
-        printf("ic: %.4x, starting_x: %d, starting_y: %d, n: %d\n", ic, starting_x, starting_y, n);
-        printBits(1, &pixels);
+        //printf("ic: %.4x, starting_x: %d, starting_y: %d, n: %d\n", ic, starting_x, starting_y, n);
+        //printBits(1, &pixels);
         for (int bit = 0; bit < 8; bit++)
         {
-            pixel = (pixels >> (8 - bit)) & 1;
-            printf("pixel_%d: %d\n", bit, pixel);
+            pixel = (pixels >> (7 - bit)) & 1;
+            //printf("pixel_%d: %d\n", bit, pixel);
             display[starting_y][starting_x + bit] = display[starting_y][starting_x + bit] ^ pixel;
             if (display[starting_y][starting_x + bit] == 1)
                 registers[15] = 0;
             else
                 registers[15] = 1;
         }
-        starting_x += 8;
+        starting_y += 1;
     }
 }
 
