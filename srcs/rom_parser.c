@@ -16,14 +16,14 @@ int     open_rom(char *rom_path)
 void    write_to_memory(char *rom_path, unsigned char *memory)
 {
     int     rom_fd;
-    char    c;
+    unsigned char    c;
     int     num_of_bytes;
 
     rom_fd = open_rom(rom_path);
     num_of_bytes = read(rom_fd, &c, 1);
     while (num_of_bytes != 0)
     {
-        *memory = (unsigned char) c;
+        *memory = c;
         memory++;
         num_of_bytes = read(rom_fd, &c, 1);
     }
