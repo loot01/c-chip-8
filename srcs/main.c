@@ -1,4 +1,7 @@
+#include <bits/types/timer_t.h>
 #include <raylib.h>
+#include <time.h>
+#include <unistd.h>
 #include "../includes/utils.h"
 #include "../includes/rom_parser.h"
 #include "../includes/render.h"
@@ -38,8 +41,8 @@ int main (int argc, char **argv)
     }
     for (int i = 0; i < 16; i++)
         memory[i] = i;
-    SetTargetFPS(FPS);
     setup_screen();
+    SetTargetFPS(FPS);
     while (!WindowShouldClose())
     {
         for (int i = 0; i < (int) instructions_per_frame; i++)
@@ -47,6 +50,10 @@ int main (int argc, char **argv)
             unsigned short opcode = fetch_next_opcode(&pc);
             decode_and_execute_opcode(opcode, &pc, &sp, &ic);
         }
+        while (delay_timer > 0)
+            delay_timer--;
+        while (sound_timer > 0)
+            sound_timer--;
         BeginDrawing();
             draw_screen();
         EndDrawing();

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <raylib.h>
 #include "../includes/render.h"
@@ -24,8 +25,8 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
             }
             else if (NN(opcode) == 0xEE)
             {
-                *pc = *sp;
                 (*sp)--;
+                *pc = stack[*sp];
             }
             break;
             
@@ -34,8 +35,8 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
             //printf("Setting pc to %.4x, pc = %.4x\n", NNN(opcode), *pc);
             break;
         case 0x2:
-            (*sp)++;
             stack[*sp] = *pc;
+            (*sp)++;
             *pc = NNN(opcode);
             break; 
         case 0x3:
@@ -61,6 +62,7 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
         case 0x8:
             switch (N(opcode))
             {
+                int temp;
                 case 0x0:
                     registers[X(opcode)] = registers[Y(opcode)];
                     break;
@@ -74,16 +76,20 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
                     registers[X(opcode)] = registers[X(opcode)] ^ registers[Y(opcode)];
                     break;
                 case 0x4:
-                    if (registers[X(opcode)] + registers[Y(opcode)] > 255)
-                        registers[15] = 1;
+                    temp = registers[X(opcode)];
                     registers[X(opcode)] += registers[Y(opcode)];
-                    break;
-                case 0x5:
-                    if (registers[X(opcode)] > registers[Y(opcode)])
+                    if (temp + registers[Y(opcode)] > 255)
                         registers[15] = 1;
                     else
                         registers[15] = 0;
+                    break;
+                case 0x5:
+                    temp = registers[X(opcode)];
                     registers[X(opcode)] = registers[X(opcode)] - registers[Y(opcode)];
+                    if (temp >= registers[Y(opcode)])
+                        registers[15] = 1;
+                    else
+                        registers[15] = 0;
                     break;
                 case 0x6: // shift reg_x to the right by one
                     if (compatibility_flag == 1)
@@ -91,15 +97,17 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
                     //printf("register: ");
                     //printBits(1, &registers[X(opcode)]);
                     //printf("bit : %d\n", registers[X(opcode)] & 0x01);
-                    registers[15] = registers[X(opcode)] & 0x01;
+                    temp = registers[X(opcode)];
                     registers[X(opcode)] = registers[X(opcode)] >> 1;
+                    registers[15] = temp & 0x01;
                     break;
                 case 0x7:
-                    if (registers[Y(opcode)] > registers[X(opcode)])
+                    temp = registers[X(opcode)];
+                    registers[X(opcode)] = registers[Y(opcode)] - registers[X(opcode)];
+                    if (registers[Y(opcode)] >= temp)
                         registers[15] = 1;
                     else
                         registers[15] = 0;
-                    registers[X(opcode)] = registers[Y(opcode)] - registers[X(opcode)];
                     break;
                 case 0xE: // shift reg_x to the left by one
                     if (compatibility_flag == 1)
@@ -107,8 +115,9 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
                     //printf("register: ");
                     //printBits(1, &registers[X(opcode)]);
                     //printf("bit : %d\n", registers[X(opcode)] & 0x01);
-                    registers[15] = registers[X(opcode)] & 0x01;
+                    temp = registers[X(opcode)];
                     registers[X(opcode)] = registers[X(opcode)] << 1;
+                    registers[15] = (temp >> 7) & 0x01;
                     break;
             }
             break;
@@ -127,8 +136,9 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
             if (NN(opcode) == 0x9E)
             {
                 int key, key2;
-                key = registers[X(opcode)] + (registers[X(opcode)] < 0xA ? 48 : 65);
-                key2 = registers[X(opcode)] + (registers[X(opcode)] < 0xA ? 48 : 320); 
+                printf("register: %x\n", registers[X(opcode)]);
+                key = registers[X(opcode)] + (registers[X(opcode)] > 10 ? KEY_A : KEY_ZERO);
+                key2 = registers[X(opcode)] + (registers[X(opcode)] > 10 ? KEY_A : KEY_KP_0); 
                 // added to account for numbers pressed from exentended keyboard
                 if (IsKeyDown(key) || IsKeyDown(key2))
                     *pc += 2;
@@ -136,8 +146,8 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
             else if (NN(opcode) == 0xA1)
             {
                 int key, key2;
-                key = registers[X(opcode)] + (registers[X(opcode)] < 0xA ? 48 : 65);
-                key2 = registers[X(opcode)] + (registers[X(opcode)] < 0xA ? 48 : 320); 
+                key = registers[X(opcode)] + (registers[X(opcode)] > 0x10 ? KEY_A : KEY_ZERO);
+                key2 = registers[X(opcode)] + (registers[X(opcode)] > 0x10 ? KEY_A : KEY_KP_0); 
                 // added to account for numbers pressed from exentended keyboard
                 if (!IsKeyDown(key) && !IsKeyDown(key2))
                     *pc += 2;
@@ -163,12 +173,18 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
                     break;
                 case 0x0A:
                     key_pressed = GetCharPressed();
-                    if ((key_pressed >= KEY_A && key_pressed <= KEY_F) 
-                        || (key_pressed >= KEY_ZERO && key_pressed <= KEY_NINE)
-                        || (key_pressed >= KEY_KP_0 && key_pressed <= KEY_KP_9))
-                        registers[X(opcode)] = key_pressed - ((key_pressed >= KEY_A && key_pressed <= KEY_F) 
-                                                              ? KEY_A : ((key_pressed >= KEY_ZERO && key_pressed <= KEY_NINE) 
-                                                              ? KEY_ZERO : KEY_KP_0));
+                    if (key_pressed >= KEY_A && key_pressed <= KEY_F)
+                    {
+                        registers[X(opcode)] = key_pressed - KEY_A;
+                    }
+                    else if (key_pressed >= KEY_ZERO && key_pressed <= KEY_NINE)
+                    {
+                        registers[X(opcode)] = key_pressed - KEY_ZERO;
+                    }
+                    else if (key_pressed >= KEY_KP_0 && key_pressed <= KEY_KP_9)
+                    {
+                        registers[X(opcode)] = key_pressed - KEY_KP_0;
+                    }
                     else
                         *pc -= 2;
                     break;
@@ -177,24 +193,24 @@ void    decode_and_execute_opcode(unsigned short opcode, int *pc, int *sp, int *
                     break;
                 case 0x33:
                     num = registers[X(opcode)];
-                    *(ic + 2) = num % 10;
+                    memory[*ic + 2] = num % 10;
                     num /= 10;
-                    *(ic + 1) = num % 10;
-                    *ic = num / 10;
+                    memory[*ic + 1] = num % 10;
+                    memory[*ic] = num / 10;
                     break;
                 case 0x55:
-                    for (int i = 0; i < X(opcode); i++)
+                    for (int i = 0; i <= X(opcode); i++)
                     {
-                        *ic = registers[i];
+                        memory[*ic] = registers[i];
                         *ic += 1;
                     }
                     if (compatibility_flag == 0)
                         *ic -= X(opcode);
                     break;
                 case 0x65:
-                    for (int i = 0; i < X(opcode); i++)
+                    for (int i = 0; i <= X(opcode); i++)
                     {
-                        registers[i] = *ic;
+                        registers[i] = memory[*ic];
                         *ic += 1;
                     }
                     if (compatibility_flag == 0)
